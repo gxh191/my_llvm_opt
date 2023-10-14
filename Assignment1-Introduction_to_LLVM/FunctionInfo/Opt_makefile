@@ -1,0 +1,36 @@
+OPTIMIZER := FunctionInfo.so
+OPT_PASSES := -function-info
+
+LLVM_VERSION ?= 11
+CLANG_VERSION ?= 11
+
+CXXFLAGS := $(shell llvm-config-$(LLVM_VERSION) --cxxflags) -fPIC
+
+OPT_OBJs := $(subst .cpp,.o,$(wildcard *.cpp))
+
+TEST_SRCs := $(basename $(notdir $(wildcard ./test/*.c)))
+TEST_RAW_LLs := $(subst .c,.ll,$(wildcard ./test/*.c))
+TEST_OPT_LLs := $(addprefix ./test/,$(addsuffix -opt.ll,$(TEST_SRCs)))
+
+all: $(TEST_OPT_LLs) $(TEST_RAW_LLs) 
+
+# bc 文件变成方便阅读的 ll 文件
+./test/%.ll: ./test/%.bc
+	llvm-dis-$(LLVM_VERSION) $< -o=$@
+
+# 将每个原始字节码文件与优化器一起运行，生成优化后的字节码文件
+./test/%-opt.bc: ./test/%.bc $(OPTIMIZER)
+	env LD_LIBRARY_PATH=. opt-$(LLVM_VERSION) -load $(OPTIMIZER) $(OPT_PASSES) $< -o $@
+
+# clang 将 .c 源文件变成 bc 文件
+./test/%.bc: ./test/%.c
+	clang-$(CLANG_VERSION) -O2 -emit-llvm -c $< -o $@
+
+# 将优化器的对象文件链接在一起
+$(OPTIMIZER): $(OPT_OBJs)
+	$(CXX) -dylib -fPIC -shared $^ -o $@
+
+.PHONY: clean
+clean:
+	$(RM) $(TEST_OPT_LLs) $(TEST_RAW_LLs) $(OPTIMIZER) $(OPT_OBJs)
+	echo $(TEST_OPT_LLs) $(TEST_RAW_LLs) $(OPTIMIZER) $(OPT_OBJs)

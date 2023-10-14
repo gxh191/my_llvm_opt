@@ -1,0 +1,10 @@
+Function Name: g_incr
+Number of Arguments: 1
+Number of Calls: 0
+Number OF BBs: 1
+Number of Instructions: 4
+Function Name: loop
+Number of Arguments: 3
+Number of Calls: 0
+Number OF BBs: 3
+Number of Instructions: 10

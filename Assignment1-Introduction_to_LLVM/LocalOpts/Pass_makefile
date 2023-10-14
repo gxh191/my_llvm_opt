@@ -1,0 +1,17 @@
+OPTIMIZER := libLocalOpts.so
+OBJs := $(subst .cpp,.o,$(wildcard *.cpp))
+
+LLVM_VERSION ?= 11
+LLVM_CONFIG := llvm-config-$(LLVM_VERSION)
+
+CXXFLAGS := $(shell $(LLVM_CONFIG) --cxxflags) -fPIC
+LDFLAGS := $(shell $(LLVM_CONFIG) --ldflags --libs all)
+
+all: $(OPTIMIZER)
+
+$(OPTIMIZER): $(OBJs)
+	$(CXX) -shared $^ $(LDFLAGS) -o $@
+
+.PHONY: clean
+clean:
+	$(RM) $(OPTIMIZER) $(OBJs)
